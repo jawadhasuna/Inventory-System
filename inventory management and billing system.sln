@@ -1,31 +1,292 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.10.34928.147
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "inventory management and billing system", "inventory management and billing system.vcxproj", "{DD4D1D12-FD2F-4714-88DE-DDD7B118942D}"
-EndProject
-Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
-		Release|x64 = Release|x64
-		Release|x86 = Release|x86
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{DD4D1D12-FD2F-4714-88DE-DDD7B118942D}.Debug|x64.ActiveCfg = Debug|x64
-		{DD4D1D12-FD2F-4714-88DE-DDD7B118942D}.Debug|x64.Build.0 = Debug|x64
-		{DD4D1D12-FD2F-4714-88DE-DDD7B118942D}.Debug|x86.ActiveCfg = Debug|Win32
-		{DD4D1D12-FD2F-4714-88DE-DDD7B118942D}.Debug|x86.Build.0 = Debug|Win32
-		{DD4D1D12-FD2F-4714-88DE-DDD7B118942D}.Release|x64.ActiveCfg = Release|x64
-		{DD4D1D12-FD2F-4714-88DE-DDD7B118942D}.Release|x64.Build.0 = Release|x64
-		{DD4D1D12-FD2F-4714-88DE-DDD7B118942D}.Release|x86.ActiveCfg = Release|Win32
-		{DD4D1D12-FD2F-4714-88DE-DDD7B118942D}.Release|x86.Build.0 = Release|Win32
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {B69FF762-132F-4554-BBA2-9D7199520ED3}
-	EndGlobalSection
-EndGlobal
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cstring>
+#include <conio.h>
+#include <iomanip>
+#include <windows.h>
+using namespace std;
+
+// Structure to represent an item
+struct Item {
+    string name;
+    double price=0;
+    int quantity=0;
+};
+
+// Constants
+const int MAX_ITEMS = 100; //amount of physical rack space in my store
+Item *inventory =new Item[MAX_ITEMS];
+int itemCount = 0;
+double totalSales = 0;
+string search;
+char pass[5];//space for null character
+
+void setcolor(int color)
+{
+    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE),color);
+}
+void gotoxy(int x,int y)
+{
+    COORD coord;
+    coord.X = x;
+    coord.Y = y;
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+
+}
+void login()
+{
+    string fullname;
+    char savedpass[5] = {'1','2','3','4','\0'};
+    cout << "Please Login To continue into the Software: \n";
+    cout << "Username: \n";
+    getline(cin, fullname);
+    do {
+        
+        cout << "Enter 4 digit Password: \n";
+        for (int i = 0; i < 4; i++)
+        {
+            pass[i] = _getch();
+            cout << "*";
+        }
+        if (!strcmp(pass, savedpass))
+        {
+            cout << " \n Welcome to the Inventory and Billing Software " << fullname << " :)" << endl;
+            return;
+        }
+        else
+            cout << "\n Invalid password "<<fullname <<". Try again"<<endl;
+    } while (true);
+}
+
+// Function prototypes
+void addItem();
+void removeItem();
+void displayInventory();
+void generatebill();
+void displayTotalSales();
+void saveData();
+void retrieveData();
+void searchitem(string);
+void cleanmemoryleaks();
+
+
+int main() {
+    setcolor(3);
+    gotoxy(10,3);
+    cout << "*******************************************"<<endl;
+    gotoxy(10, 4);
+    cout << "* JAWAD MART INVENTORY AND BILLING SYSTEM *"<<endl;
+    gotoxy(10, 5);
+    cout << "******************************************* ";
+    gotoxy(0, 8);
+    setcolor(2);
+
+    //enter name and password to login and check level of access
+    login();
+    // Retrieve saved data
+    retrieveData();
+
+    int choice;
+    do {
+        cout << "\n1. Display Inventory\n2. Generate Bill\n3. Display Total Sales\n4. Add Item\n5. Delete Item\n6. Save Data\n7. Search Item\n8. Exit\n";
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+        case 1:
+            displayInventory();
+            break;
+        case 2:
+            generatebill();
+            break;
+        case 3:
+            displayTotalSales();
+            break;
+        case 4:
+            addItem();
+            break;
+        case 5:
+            removeItem();
+            break;
+        case 6:
+            saveData();
+            cout << "Data saved in file.\n";
+            break;
+        case 7:
+            
+            cout << "enter item name you want to search: ";
+            cin >> search;
+            searchitem(search);
+            break;
+        case 8:
+            cout << "Exiting program.\n";
+            break;
+        default:
+            cout << "Invalid choice. Please try again.\n";
+        }
+    } while (choice != 8);
+    cleanmemoryleaks();
+    return 0;
+}
+
+// Function to add an item to inventory
+void addItem() 
+{
+    setcolor(8);
+    if (itemCount >= MAX_ITEMS) 
+    {
+        cout << "Inventory is full. Cannot add more items.\n";
+        return;
+    }
+
+    cout << "Enter item name: ";
+    cin>>inventory[itemCount].name;
+    cout << "Enter item price: ";
+    cin >> inventory[itemCount].price;
+    cout << "Enter item quantity: ";
+    cin >> inventory[itemCount].quantity;
+
+    itemCount++;
+    cout << "Item added to inventory.\n";
+}
+
+// Function to remove an item from inventory
+void removeItem() 
+{
+    setcolor(1);
+    if (itemCount == 0) 
+    {
+        cout << "Inventory is empty. Cannot remove items.\n";
+        return;
+    }
+
+    int id;
+    cout << "Enter item ID to delete: ";
+    cin >> id;
+
+    if (id >= 1 && id <= itemCount) {
+        // Remove item by shifting elements
+        for (int i = id - 1; i < itemCount - 1; ++i) 
+        {
+            inventory[i] = inventory[i + 1];
+        }
+        itemCount--;
+        cout << "Item deleted from inventory.\n";
+    }
+    else {
+        cout << "Invalid item ID.\n";
+    }
+}
+
+// Function to display inventory
+void displayInventory()
+{   
+    setcolor(4);
+    cout << "Inventory:\n";
+    cout << "ID\tName\tPrice\tQuantity\n";
+    for (int i = 0; i < itemCount; ++i) 
+    {
+        cout << i + 1 << "\t" << inventory[i].name << "\t" << inventory[i].price << "\t" << inventory[i].quantity << endl;
+    }
+}
+
+// Function to process a sale
+void generatebill() 
+{
+    setcolor(5);
+    int id, quantity;
+    cout << "Enter item ID and quantity: ";
+    cin >> id >> quantity;
+
+    if (id >= 1 && id <= itemCount) 
+    {
+        if (inventory[id - 1].quantity >= quantity) 
+        {
+            double total = quantity * inventory[id - 1].price;
+            cout << "Total sale amount: Rs." << total << endl;
+            inventory[id - 1].quantity -= quantity;
+            totalSales += total;
+        }
+        else {
+            cout << "Insufficient quantity in stock.\n";
+        }
+    }
+    else {
+        cout << "Invalid item ID.\n";
+    }
+}
+
+// Function to display total sales
+void displayTotalSales() 
+{
+    setcolor(6);
+    cout << "Total Sales: Rs." << totalSales << endl;
+}
+
+//Function to search selected item via name
+void searchitem(string search)
+{
+    int c=0;
+    for (int i = 0; i < itemCount; i++)
+    {
+        if (inventory[i].name == search)
+        {
+            c++;
+            cout << "item found at id : " << i + 1<<", with amount left in inventory: "<<inventory[i].quantity<<endl;
+        }
+    }
+    if (c != 1)
+    {
+        cout << "Item Not Available!" << endl;
+    }
+
+}
+// Function to save data to files
+void saveData() 
+{
+    setcolor(7);
+    ofstream inventoryFile("inventory.txt",ios::out);
+    if (inventoryFile.is_open())
+    {
+        inventoryFile << itemCount << endl;
+        for (int i = 0; i < itemCount; ++i) {
+           inventoryFile << inventory[i].name << " " << inventory[i].price << " " << inventory[i].quantity << endl;
+        }
+        inventoryFile.close();
+    }
+    ofstream salesFile("sales.txt");
+    if (salesFile.is_open()) {
+        salesFile << totalSales << endl;
+        salesFile.close();
+    }
+}
+
+// Function to retrieve data from files
+void retrieveData() {
+    ifstream inventoryFile("inventory.txt");
+    if (!inventoryFile)
+    {
+        cout << "file not found!";
+        exit(1);
+    }
+    if (inventoryFile) {
+        inventoryFile >> itemCount;
+        for (int i = 0; i < itemCount; i++)
+        {
+            inventoryFile >> inventory[i].name >> inventory[i].price >> inventory[i].quantity;
+        }
+        inventoryFile.close();
+    }
+
+    ifstream salesFile("sales.txt");
+    if (salesFile) {
+        salesFile >> totalSales;
+        salesFile.close();
+    }
+}
+
+void cleanmemoryleaks()
+{
+    delete[]inventory;
+}
